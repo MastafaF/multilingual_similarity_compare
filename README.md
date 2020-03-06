@@ -14,7 +14,7 @@ For each sentence in the source language, we calculate the closest sentence in t
 1. First, get the data from the section "Get data".  
 2. Second, install the necessary tools such as tokenizers and BPE encoder.   
 3. Third, preprocess the data (this step is not necessary for all models but interesting for the seek of experimenting).   
-4. Then, get sentence embeddings with the method of your choice. In this section, we have not optimized the code so it can be very slow for XLM models. It is quite fast with sentence-transformers though. It could be useful to improve this part to get sentence embeddings faster ==> We could use larger batches (currently, only using batch of 1). Feel free to raise an issue with suggestions. 
+4. Then, get sentence embeddings with the method of your choice. In this section, we have not optimized the code so it can be very slow for XLM models. It is quite fast with sentence-transformers though. It could be useful to improve this part to get sentence embeddings faster ==> We could use larger batches (batch version is available but needs to be optimized). Feel free to raise an issue with suggestions. 
 5. Finally, compute similarity search for each pair of languages.   
 
 # Results 
@@ -123,22 +123,15 @@ In the following, we show how to replicate such results.
 
 ## Get data
 
-If you are on MAC like myself, instead of using 'tar' command, use 'gtar'. 
-Hence, we need to install 'brew install gnu-tar' prior to that. 
-
 For linux users: 
 Use script wmt.sh 
 ```
 sh wmt.sh 
 ```
 
-For MAC users:
-```
-sh wmt_mac.sh 
-```
 
 ## Install tools
-We assume that tools like torch, tqdm, etc are already installed. On Google Collab, it is the case. (cf. examples)  
+We assume that tools like torch, tqdm, etc are already installed. On Google Collab, it is the case. (cf. examples --coming soon)  
 Use script install-tools.sh 
 
 ```
@@ -185,6 +178,17 @@ sh similarity_XLM.sh MAX_LEN
 # Replicate Results: XLM-R 
 ## Run similarity search 
 In this section, we still need to update source code to make it faster. At the moment, we iterate over each line and build encoding on the fly which takes too much time.
+
+Parameters: 
+* --max_len: maximum length of the sentences 
+* --pooling_strat: pooling strategy in the set {cls, mean} at the moment. Needs to be optimized. Default value is cls embedding.
+ 
 ```
-sh similarity_XLM-R.sh MAX_LEN
+sh similarity_XLM-R.sh MAX_LEN POOLING_STRAT
+```
+
+Batch version: 
+
+```
+sh similarity_XLM-R_batch.sh MAX_LEN POOLING_STRAT
 ```
