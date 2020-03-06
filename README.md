@@ -151,8 +151,8 @@ sh prepare-data-wmt.sh
 # Replicate Results: Sentence-transformers
 At the moment,  sentence-transformers on "distiluse-base-multilingual-cased" only covers Arabic, Chinese, Dutch, English, French, German, Italian, Korean, Polish, Portuguese, Russian, Spanish, Turkish.   
 Hence, Czech is not covered. We still decide to print the errors for language Czech for the seek of experiment on pure Zero-Shot learning. However, for comparison with baseline, we focus on other pairs of languages.
-## Run similarity search 
 
+## Run similarity search 
 ```
 sh similarity_sentenceBERT.sh
 ```
@@ -188,7 +188,6 @@ sh similarity_XLM-R.sh MAX_LEN POOLING_STRAT
 ```
 
 Batch version: 
-
 ```
 sh similarity_XLM-R_batch.sh MAX_LEN POOLING_STRAT
 ```
