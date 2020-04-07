@@ -167,7 +167,7 @@ class XLM_R_model:
 def buffered_read(fp, buffer_size):
     buffer = []
     for src_str in fp:
-        buffer.append(src_str.strip("\n"))
+        buffer.append(src_str.strip())
         if len(buffer) >= buffer_size:
             yield buffer
             buffer = []
@@ -189,7 +189,10 @@ def EncodeFilep(inp_file, out_file, buffer_size=10000, verbose=False):
     n = 0
     t = time.time()
     for sentences in buffered_read(inp_file, buffer_size):
+        # print(sentences[0])
+        # print(XLM_model.encode(sentences=sentences, max_len=max_len).shape)
         XLM_model.encode(sentences=sentences, max_len=max_len).tofile(out_file)
+
         # Free up RAM
         gc.collect()
         # encoder.encode_sentences(sentences).tofile(out_file)
@@ -212,7 +215,8 @@ if __name__ == '__main__':
     XLM_model = XLM_R_model("xlm-roberta-large", gpu=GPU)
     max_len = MAX_LEN
     # Open file
-    lang_arr = ['cs', 'de', 'en', 'es', 'fr']
+    # lang_arr = ['cs', 'de', 'en', 'es', 'fr']
+    lang_arr = ['cs', 'de']
 
     # lang = "ru"
     for lang in lang_arr:
@@ -222,13 +226,12 @@ if __name__ == '__main__':
 
         in_file = open(input_file_name, 'r')
         in_file = [line.rstrip('\n') for line in in_file]
+        print("LENGTH OF TOTAL DOCUMENT", len(in_file))
+        out_fname = "../output/XLM_R/newstest2012.{}.embed.npy".format(lang)
+        fout = open(out_fname, mode='wb')
         # On Google Colab I get killed when using buffer_size = 32, so I use buffer_size = 24 in practice
-        EncodeFilep(inp_file=in_file, out_file="../output/XLM_R/newstest2012.{}.embed.npy".format(lang), buffer_size=32,
+        EncodeFilep(inp_file=in_file, out_file=fout, buffer_size=32,
                     verbose=True)
-
+        fout.close()
         # Free up memory
         gc.collect()
-        # # Store embedding in an array
-        np_embed = np.array(arr_embed)
-        # save numpy array in memory
-        np.save(file = "../output/XLM_R/newstest2012.{}.embed".format(lang), arr = np_embed)

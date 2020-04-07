@@ -49,7 +49,7 @@ print('\nProcessing:')
 all_texts = None
 all_data = []
 all_index = []
-lang_arr = ['cs', 'de', 'en', 'es', 'fr', 'ru']
+lang_arr = ['cs', 'de', 'en', 'es', 'fr']
 # for sentence transformers, multilingual model does not support 'cs' yet. So we remove it for now
 # lang_arr = ['de', 'en', 'es', 'fr', 'ru']
 # filename_base = "./dev/newtest2012."

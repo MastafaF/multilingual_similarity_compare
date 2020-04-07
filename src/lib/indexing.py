@@ -77,14 +77,15 @@ def IndexCreate(dname, idx_type,
                 verbose=False, normalize=True, save_index=False, dim=1280, model = 'xlm'):
 
     assert idx_type == 'FlatL2', 'only FlatL2 index is currently supported'
-    # x = np.fromfile(dname, dtype=np.float32, count=-1)
-    x = np.load(dname)
+    x = np.fromfile(dname, dtype=np.float32, count=-1)
+    # x = np.load(dname)
     print("shape of matrices")
     print(x.shape)
-    # nbex = x.shape[0] // dim
+    nbex = x.shape[0] // dim
+    x.resize(nbex, dim)
     # For XLM and XLM-R
-    if model == "xlm":
-        x = x[:,0,:]
+    # if model == "xlm":
+    #     x = x[:,0,:]
     nbex = x.shape[0]
     print("shape of matrices")
     print(x.shape)
