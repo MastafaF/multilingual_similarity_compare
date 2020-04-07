@@ -182,12 +182,13 @@ In this section, we still need to update source code to make it faster. At the m
 Parameters: 
 * --max_len: maximum length of the sentences 
 * --pooling_strat: pooling strategy in the set {cls, mean} at the moment. Needs to be optimized. Default value is cls embedding.
- 
+* --gpu: Use GPU if --gpu set to True and GPU support in your machine 
+  
 ```
 sh similarity_XLM-R.sh MAX_LEN POOLING_STRAT
 ```
 
 Batch version: 
 ```
-sh similarity_XLM-R_batch.sh MAX_LEN POOLING_STRAT
+sh similarity_XLM-R_batch.sh MAX_LEN POOLING_STRAT GPU
 ```

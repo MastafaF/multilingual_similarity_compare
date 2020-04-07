@@ -10,6 +10,7 @@ odir="./output/XLM_R"
 sdir="./src"
 max_len=$1
 pooling_strat=$2
+gpu=$3
 
 # If output directory does not exist then create it
 if [ ! -d ${odir} ] ; then
@@ -22,7 +23,7 @@ echo " - Getting sentence embeddings from XLM-R with batches..."
 # Get sentence embeddings and store them in output directory
 # cd src directory
 cd ${sdir}
-python get_sentence_embeddings_XLM-R_batch.py --max_len ${max_len} --pooling_strat ${pooling_strat}
+python get_sentence_embeddings_XLM-R_batch.py --max_len ${max_len} --pooling_strat ${pooling_strat} --gpu ${gpu}
 
 # input dir for similarity search is where output of embedding process are stored
 in_dir="../output/XLM_R/"

@@ -19,14 +19,19 @@ import time
 
 parser = argparse.ArgumentParser(description='Getting sentence embeddings with XLM. ')
 parser.add_argument('--max_len', type=int, default=40,
-    help='Maximum length of tokens: all sentences with less tokens will be padded with 0, else we will remove all tokens after max_len index')
+                    help='Maximum length of tokens: all sentences with less tokens will be padded with 0, else we will remove all tokens after max_len index')
 
-parser.add_argument('--pooling_strat',type=str, default='cls',
+parser.add_argument('--pooling_strat', type=str, default='cls',
                     help='Pooling strategy to use to get sentence embeddings for last hidden layer')
 
+parser.add_argument('--gpu', type=bool, default=True,
+                    help='Use GPU or not?')
+
 args = parser.parse_args()
-MAX_LEN = args.max_len
-POOL_STRAT = args.pooling_strat
+
+MAX_LEN = args.max_len  # args.max_len
+POOL_STRAT = args.pooling_strat  # args.pooling_strat
+GPU = args.gpu
 
 if POOL_STRAT == 'mean':
     print('Using mean pooling strategy...')
@@ -55,20 +60,32 @@ class XLM_R_model:
         'xlm-mlm-100-1280': "https://s3.amazonaws.com/models.huggingface.co/bert/xlm-mlm-100-1280-pytorch_model.bin",
     }
 
-    def __init__(self, model_name):
-        # @TODO: check what causal refers again
+    def __init__(self, model_name, gpu=False):
         # model = XLMModel.from_pretrained("xlm-mlm-enfr-1024", causal = False)
         self.model_name = model_name
         self.model = XLMRobertaModel.from_pretrained(model_name)
         self.tokenizer = XLMRobertaTokenizer.from_pretrained(self.model_name, do_lower_case=True)
+        self.use_gpu = gpu
+        is_gpu_support = torch.cuda.is_available()
+        if self.use_gpu and is_gpu_support:
+            print("Using GPU...")
+            self.device = torch.device("cuda")
+        else:
+            print("Using CPU...")
+            self.device = torch.device("cpu")
+
+        self.model.to(self.device)
+
+        # Only evaluation mode with forward pass: no backward pass
+        self.model.eval()
 
     def encode(self, sentences: list, max_len: int):
         ########## For 15 languages ########
         tokenizer = self.tokenizer
         """
-    
+
         from https://huggingface.co/transformers/_modules/transformers/tokenization_utils.html 
-    
+
         truncation_strategy: string selected in the following options:
                       - 'longest_first' (default) Iteratively reduce the inputs sequence until the input is under max_length
                           starting from the longest one at each token (when there is a pair of input sequences)
@@ -88,6 +105,7 @@ class XLM_R_model:
                                          truncation_strategy="longest_first",
                                          pad_to_max_length='right')
             input_ids_arr.append(input_ids)
+
         # Actually the padding the Padding is done with the ID = 1
         # So all tokens with ids = 1 are just paddings
         input_ids = torch.tensor(np.array(input_ids_arr))
@@ -110,7 +128,9 @@ class XLM_R_model:
         # print(attention_masks.shape)
         # print("=========")
         ########## FORWARD TO GET EMBEDDINGS ##########
-
+        # Move every tensor to the device used
+        input_ids = input_ids.to(self.device)
+        attention_masks = attention_masks.to(self.device)
         embeddings_tuple = self.model(input_ids=input_ids, attention_mask=attention_masks)
         embeddings_ = embeddings_tuple[0]
         # print(embeddings_)
@@ -135,6 +155,9 @@ class XLM_R_model:
             # print(embeddings_arr.shape)
             del embeddings_, embeddings_mean, embeddings_tuple
 
+        # Check impact of torch.cuda.empty_cache()
+        if self.use_gpu:
+            torch.cuda.empty_cache()
         # free up ram
         gc.collect()
         return embeddings_arr
@@ -152,6 +175,7 @@ def buffered_read(fp, buffer_size):
     if len(buffer) > 0:
         yield buffer
 
+
 def EncodeTime(t):
     t = int(time.time() - t)
     if t < 1000:
@@ -159,12 +183,15 @@ def EncodeTime(t):
     else:
         print(' in {:d}m{:d}s'.format(t // 60, t % 60))
 
+
 # Encode sentences (existing file pointers)
 def EncodeFilep(inp_file, out_file, buffer_size=10000, verbose=False):
     n = 0
     t = time.time()
     for sentences in buffered_read(inp_file, buffer_size):
-        XLM_model.encode(sentences = sentences, max_len = max_len).tofile(out_file)
+        XLM_model.encode(sentences=sentences, max_len=max_len).tofile(out_file)
+        # Free up RAM
+        gc.collect()
         # encoder.encode_sentences(sentences).tofile(out_file)
         n += len(sentences)
         if verbose and n % 10000 == 0:
@@ -172,15 +199,17 @@ def EncodeFilep(inp_file, out_file, buffer_size=10000, verbose=False):
     if verbose:
         print('\r - Encoder: {:d} sentences'.format(n), end='')
         EncodeTime(t)
+
+
 ######==================From LASER Repo=================############
 
-if __name__=='__main__':
+if __name__ == '__main__':
     # for length in newstest2012.tok.fr
     # mean value = 26.6
     # std value = 15.4
     # max value = 145
     # Load XLM model
-    XLM_model = XLM_R_model("xlm-roberta-large")
+    XLM_model = XLM_R_model("xlm-roberta-large", gpu=GPU)
     max_len = MAX_LEN
     # Open file
     lang_arr = ['cs', 'de', 'en', 'es', 'fr']
@@ -190,22 +219,16 @@ if __name__=='__main__':
         # input_file_name = "../data/processed/wmt2012/newstest2012.tok.{}".format(lang)
         input_file_name = "../dev/newstest2012.{}".format(lang)
         arr_embed = []
-        # with open(input_file_name, 'r') as file:
-        #     N_lines = 3003
-        #     with tqdm(total=N_lines) as pbar:
-        #         for line in file:
-        #             line = line.strip("\n")
-        #             # For each line get embedding
-        #             embed = XLM_model.encode(sentence = line, max_len = max_len)
-        #             arr_embed.append(embed)
-        #             pbar.update(1)
 
         in_file = open(input_file_name, 'r')
         in_file = [line.rstrip('\n') for line in in_file]
         # On Google Colab I get killed when using buffer_size = 32, so I use buffer_size = 24 in practice
-        EncodeFilep(inp_file=in_file, out_file="../output/XLM_R/newstest2012.{}.embed.npy".format(lang), buffer_size=32, verbose=True)
+        EncodeFilep(inp_file=in_file, out_file="../output/XLM_R/newstest2012.{}.embed.npy".format(lang), buffer_size=32,
+                    verbose=True)
 
+        # Free up memory
+        gc.collect()
         # # Store embedding in an array
-        # np_embed = np.array(arr_embed)
-        # # save numpy array in memory
-        # np.save(file = "../output/XLM_R/newstest2012.{}.embed".format(lang), arr = np_embed)
+        np_embed = np.array(arr_embed)
+        # save numpy array in memory
+        np.save(file = "../output/XLM_R/newstest2012.{}.embed".format(lang), arr = np_embed)
