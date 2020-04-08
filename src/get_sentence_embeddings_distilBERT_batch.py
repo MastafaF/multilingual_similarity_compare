@@ -140,7 +140,10 @@ class distilBERT_model:
         # print(input_mask_expanded)
         # print(input_mask_expanded.shape)
         # print(embeddings_ * input_mask_expanded)
-        sum_embeddings = torch.sum(embeddings_ * input_mask_expanded)
+
+        # summing in the direction of the tokens, recall that
+        # shape is (N_sentences, MAX_LEN_TOKENS, dim_embed)
+        sum_embeddings = torch.sum(embeddings_ * input_mask_expanded, dim=1)
         sum_mask = input_mask_expanded.sum(1)  # number of tokens in txt sequence
         sum_mask = torch.clamp(sum_mask, min=1e-9)
         embeddings_mean = sum_embeddings / sum_mask

@@ -135,11 +135,11 @@ class distilBERT_model:
         del embeddings_, embeddings_first_token_only, embeddings_tuple
     elif POOL_STRAT == 'mean':
         input_mask_expanded = attention_masks.unsqueeze(-1).expand(embeddings_.size()).float()
-        print("Input masks")
-        print(input_mask_expanded)
-        print(input_mask_expanded.shape)
-        print(embeddings_ * input_mask_expanded)
-        sum_embeddings = torch.sum(embeddings_ * input_mask_expanded)
+        # print("Input masks")
+        # print(input_mask_expanded)
+        # print(input_mask_expanded.shape)
+        # print(embeddings_ * input_mask_expanded)
+        sum_embeddings = torch.sum(embeddings_ * input_mask_expanded, dim=1)  # summing in the direction of the tokens
         sum_mask = input_mask_expanded.sum(1)  # number of tokens in txt sequence
         sum_mask = torch.clamp(sum_mask, min=1e-9)
         embeddings_mean = sum_embeddings / sum_mask
