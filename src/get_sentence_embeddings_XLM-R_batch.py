@@ -131,6 +131,7 @@ class XLM_R_model:
         # Move every tensor to the device used
         input_ids = input_ids.to(self.device)
         attention_masks = attention_masks.to(self.device)
+
         embeddings_tuple = self.model(input_ids=input_ids, attention_mask=attention_masks)
         embeddings_ = embeddings_tuple[0]
         # print(embeddings_)

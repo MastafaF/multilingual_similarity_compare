@@ -15,6 +15,7 @@ import numpy as np
 from tqdm import tqdm
 import argparse
 import gc
+import time
 
 parser = argparse.ArgumentParser(description='Getting sentence embeddings with XLM. ')
 parser.add_argument('--max_len', type=int, default=40,
@@ -78,7 +79,7 @@ class distilBERT_model:
     self.model.eval()
 
 
-  def encode(self, sentence:str, max_len:int):
+  def encode(self, sentences:list, max_len:int):
     tokenizer = self.tokenizer
     """
 
@@ -97,25 +98,25 @@ class distilBERT_model:
                     - 'right': pads on the right of the sequences
                     Defaults to False: no padding.
       """
-    # @TODO: get ID of PADDING tokens
+    # @TODO: get ID of PADDING tokens automatically (we printed first to get it here)
     # Actually the padding the Padding is done with the ID = 0 for distillBERT
-    # So all tokens with ids = 1 are just paddings
-    input_ids = torch.tensor(
-        tokenizer.encode(sentence, add_special_tokens=True, max_length=max_len, truncation_strategy="longest_first",
-                         pad_to_max_length='right')).unsqueeze(0)  # Batch size 1
+    # So all tokens with ids = 0 are just paddings
+    input_ids_arr = []
+    for sentence in sentences:
+        input_ids = tokenizer.encode(sentence, add_special_tokens=True, max_length=max_len,
+                                     truncation_strategy="longest_first",
+                                     pad_to_max_length='right')
+        input_ids_arr.append(input_ids)
 
-    # @TODO: get this id automatically
-    id_padding_token = 0 # after visualization
-    print("input ids")
-    print(input_ids)
-    # outputs = self.model(input_ids)
-    # embed = outputs[0]  # The last hidden-state is the first element of the output tuple
+
+    input_ids = torch.tensor(np.array(input_ids_arr))
+
 
     ########### CREATE ATTENTION MASKS ###################
     # This is just to apply attention on the part where there are actual tokens
-    # Tokens are all ids different from id = 1
-    ones = torch.ones((1, input_ids.shape[1]))
-    zeros = torch.zeros((1, input_ids.shape[1]))
+    # Tokens are all ids different from id = 0
+    ones = torch.ones(input_ids.shape)
+    zeros = torch.zeros(input_ids.shape)
     attention_masks = torch.where(input_ids == 0, zeros, ones)  # put zeros where paddings are, one otherwise
 
     ########## FORWARD TO GET EMBEDDINGS ##########
@@ -152,33 +153,74 @@ class distilBERT_model:
     return embeddings_arr
 
 
-if __name__=='__main__':
+
+
+
+###### From LASER repo ############
+def buffered_read(fp, buffer_size):
+    buffer = []
+    for src_str in fp:
+        buffer.append(src_str.strip())
+        if len(buffer) >= buffer_size:
+            yield buffer
+            buffer = []
+
+    if len(buffer) > 0:
+        yield buffer
+
+
+def EncodeTime(t):
+    t = int(time.time() - t)
+    if t < 1000:
+        print(' in {:d}s'.format(t))
+    else:
+        print(' in {:d}m{:d}s'.format(t // 60, t % 60))
+
+
+# Encode sentences (existing file pointers)
+def EncodeFilep(inp_file, out_file, buffer_size=10000, verbose=False):
+    n = 0
+    t = time.time()
+    for sentences in buffered_read(inp_file, buffer_size):
+        # print(sentences[0])
+        # print(XLM_model.encode(sentences=sentences, max_len=max_len).shape)
+        multi_distilBERT.encode(sentences=sentences, max_len=max_len).tofile(out_file)
+
+        # Free up RAM
+        gc.collect()
+        # encoder.encode_sentences(sentences).tofile(out_file)
+        n += len(sentences)
+        if verbose and n % 10000 == 0:
+            print('\r - Encoder: {:d} sentences'.format(n), end='')
+    if verbose:
+        print('\r - Encoder: {:d} sentences'.format(n), end='')
+        EncodeTime(t)
+
+
+
+if __name__ == '__main__':
     # for length in newstest2012.tok.fr
     # mean value = 26.6
     # std value = 15.4
     # max value = 145
     # Load XLM model
-    multi_distilBERT = distilBERT_model("distilbert-base-multilingual-cased")
+    multi_distilBERT = distilBERT_model("distilbert-base-multilingual-cased", gpu=GPU)
     max_len = MAX_LEN
     # Open file
-    lang_arr = ['cs', 'de', 'en', 'es', 'fr', 'ru']
-
-    # lang = "ru"
+    lang_arr = ['cs', 'de', 'en', 'es', 'fr']
     for lang in lang_arr:
-        # input_file_name = "../data/processed/wmt2012/newstest2012.tok.{}".format(lang)
+      # input_file_name = "../data/processed/wmt2012/newstest2012.tok.{}".format(lang)
         input_file_name = "../dev/newstest2012.{}".format(lang)
         arr_embed = []
-        with open(input_file_name, 'r') as file:
-            N_lines = 3003
-            with tqdm(total=N_lines) as pbar:
-                for line in file:
-                    line = line.strip("\n")
-                    # For each line get embedding
-                    embed = multi_distilBERT.encode(sentence = line, max_len = max_len)
-                    arr_embed.append(embed)
-                    pbar.update(1)
 
-        # Store embedding in an array
-        np_embed = np.array(arr_embed)
-        # save numpy array in memory
-        np.save(file = "../output/multi_distilBERT/newstest2012.{}.embed".format(lang), arr = np_embed)
+        in_file = open(input_file_name, 'r')
+        in_file = [line.rstrip('\n') for line in in_file]
+        print("LENGTH OF TOTAL DOCUMENT", len(in_file))
+        out_fname = "../output/multi_distilBERT/newstest2012.{}.embed.npy".format(lang)
+        fout = open(out_fname, mode='wb')
+        # On Google Colab I get killed when using buffer_size = 32, so I use buffer_size = 24 in practice
+        EncodeFilep(inp_file=in_file, out_file=fout, buffer_size=32,
+                    verbose=True)
+        fout.close()
+        # Free up memory
+        gc.collect()
