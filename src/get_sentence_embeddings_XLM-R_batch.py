@@ -216,8 +216,8 @@ if __name__ == '__main__':
     XLM_model = XLM_R_model("xlm-roberta-large", gpu=GPU)
     max_len = MAX_LEN
     # Open file
-    # lang_arr = ['cs', 'de', 'en', 'es', 'fr']
-    lang_arr = ['cs', 'de']
+    lang_arr = ['cs', 'de', 'en', 'es', 'fr']
+    # lang_arr = ['cs', 'de']
 
     # lang = "ru"
     for lang in lang_arr:
