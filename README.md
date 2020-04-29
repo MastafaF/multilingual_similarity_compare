@@ -157,18 +157,40 @@ Without russian, (for easier comparison with Baseline)
 
 @TODO: CHECK WHY XLM-R shows such poor performance
 
-With max_len = 40, 
+Mean Pooling Strategy is the strategy with the best performance. Refer to https://github.com/MastafaF/multilingual_similarity_compare/issues/8 for comparison when using CLS Pooling Strategy. 
+Input: MAX_LEN = 40, Mean Pooling Strategy 
+```bash
+sh similarity_XLM-R_batch.sh 40 mean True 
+```
 
-|langs |  cs    |   de      | en       |es      | fr    |   ru     |  avg|  
-|-----|-------|-------|-------|--------|-------|-------|-------|
-|cs   |  0.00%  | 95.97%  | 96.47%  | 95.37%  | 96.30%  | 96.60%  | 96.14%|
-|de   | 95.64%  |  0.00%  | 96.50%  | 96.80%  | 96.77%  | 98.04%  | 96.75%|
-|en   | 95.44%  | 95.64%  |  0.00%  | 89.34%  | 91.77%  | 94.37%  | 93.31%|
-|es   | 94.57%  | 96.27%  | 89.34%  |  0.00%  | 88.05%  | 95.87%  | 92.82%|
-|fr   | 95.84%  | 95.90%  | 92.67%  | 88.41%  |  0.00%  | 96.97%  | 93.96%|
-|ru   | 95.77%  | 97.50%  | 94.61%  | 96.27%  | 97.44%  |  0.00%  | 96.32%|
-|avg  | 95.45%  | 96.26%  | 93.92%  | 93.24%  | 94.07%  | 96.37%  | 94.88%|
+Output: 
+```
+Confusion matrix:
+langs   cs       de       en       es       fr       avg     
+cs     0.00%   91.31%   97.64%   98.37%   94.34%   95.41%
+de    93.84%    0.00%   88.05%   92.87%   95.40%   92.54%
+en    91.21%   77.79%    0.00%   72.56%   94.77%   84.08%
+es    95.47%   93.14%   61.84%    0.00%   90.28%   85.18%
+fr    91.97%   81.25%   77.12%   71.96%    0.00%   80.58%
+avg   93.12%   85.87%   81.16%   83.94%   93.70%   87.56%
+```
 
+Input: MAX_LEN = 100, Mean Pooling Strategy 
+```bash
+sh similarity_XLM-R_batch.sh 100 mean True 
+```
+
+Output: 
+```
+Confusion matrix:
+langs   cs       de       en       es       fr       avg     
+cs     0.00%   91.24%   97.77%   97.80%   92.11%   94.73%
+de    94.31%    0.00%   86.55%   92.44%   94.67%   91.99%
+en    91.08%   74.93%    0.00%   71.56%   77.69%   78.81%
+es    95.37%   88.38%   58.54%    0.00%   90.38%   83.17%
+fr    92.71%   91.58%   87.41%   89.14%    0.00%   90.21%
+avg   93.36%   86.53%   82.57%   87.74%   88.71%   87.78%
+```
 
 In the following, we show how to replicate such results. 
 # General 
