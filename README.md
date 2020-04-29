@@ -157,7 +157,7 @@ Without russian, (for easier comparison with Baseline)
 
 @TODO: CHECK WHY XLM-R shows such poor performance
 
-Mean Pooling Strategy is the strategy with the best performance. Refer to https://github.com/MastafaF/multilingual_similarity_compare/issues/8 for comparison when using CLS Pooling Strategy. 
+Mean Pooling Strategy is the strategy with the best performance. Refer to [this issue](https://github.com/MastafaF/multilingual_similarity_compare/issues/8) for comparison when using CLS Pooling Strategy. 
 Input: MAX_LEN = 40, Mean Pooling Strategy 
 ```bash
 sh similarity_XLM-R_batch.sh 40 mean True 
